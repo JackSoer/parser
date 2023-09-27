@@ -24,6 +24,6 @@ $config = [
 
 $db = new DB($config);
 
-$parser = new AlleParser('https://www.kreuzwort-raetsel.net');
+$parser = new AlleParser($_ENV['PARSE_SITE_URL']);
 
 $parser->run();
