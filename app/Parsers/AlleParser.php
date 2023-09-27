@@ -43,7 +43,7 @@ class AlleParser extends Parser
         }
     }
 
-    private function getQuestionsAndAnswers(array $secondDnrgLists): array
+    private function saveQuestionsAndAnswers(array $secondDnrgLists): void
     {
         $questionsAndAnswers = [
             'questions' => [],
@@ -67,8 +67,6 @@ class AlleParser extends Parser
 
             $this->saveQuestionsAndAnswersToDB($questionsAndAnswers, $secondDnrgList['href']);
         }
-
-        return $questionsAndAnswers;
     }
 
     private function getAnswersLength(array $answersList): array
@@ -116,8 +114,7 @@ class AlleParser extends Parser
 
             $dnrgList = $this->getDnrgList($this->document);
             $secondDnrgLists = $this->getSecondDnrgLists($dnrgList);
-            $questionsAndAnswers = $this->getQuestionsAndAnswers($secondDnrgLists);
-            print_r($questionsAndAnswers);
+            $this->saveQuestionsAndAnswers($secondDnrgLists);
         } catch (Exception $err) {
             echo $err->getMessage();
         }
