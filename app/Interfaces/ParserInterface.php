@@ -4,7 +4,9 @@ namespace App\Interfaces;
 
 interface ParserInterface
 {
-    public function __construct(string $url);
-    public function getListInfo(array $list): array;
-    public function run(): void;
+    function __construct(string $url);
+    function getListInfo(array $list): array;
+    function loadDocument(string $url): void;
+    function log(string $loggerName, mixed $stream, int $level, string $string, array $context): void;
+    function run(): void;
 }

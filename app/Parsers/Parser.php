@@ -5,6 +5,8 @@ namespace App\Parsers;
 use App\Interfaces\ParserInterface;
 use DiDom\Document;
 use GuzzleHttp\Client;
+use Monolog\Handler\StreamHandler;
+use Monolog\Logger;
 
 class Parser implements ParserInterface
 {
@@ -23,6 +25,13 @@ class Parser implements ParserInterface
     {
     }
 
+    public function loadDocument(string $url): void
+    {
+        $response = $this->client->get($url);
+        $html = $response->getBody();
+        $this->document->loadHtml($html);
+    }
+
     public function getListInfo(array $list): array
     {
         $listInfo = [];
@@ -37,5 +46,17 @@ class Parser implements ParserInterface
         }
 
         return $listInfo;
+    }
+
+    public function log(string $loggerName, mixed $stream, int $level, string $string, array $context): void
+    {
+        $logToConsole = new Logger($loggerName);
+        $logToConsole->pushHandler(new StreamHandler($stream, $level));
+
+        if ($level === 100) {
+            $logToConsole->debug($string, $context);
+        } else if ($level === 200) {
+            $logToConsole->info($string, $context);
+        }
     }
 }
