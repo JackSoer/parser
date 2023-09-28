@@ -12,13 +12,15 @@ class Parser implements ParserInterface
 {
     protected $client;
     protected $document;
+    protected $proxies;
     public $url;
 
-    public function __construct(string $url, array $clientOptions)
+    public function __construct(string $url, array $proxies)
     {
-        $this->client = new Client($clientOptions);
+        $this->client = new Client();
         $this->url = $url;
         $this->document = new Document();
+        $this->proxies = $proxies;
     }
 
     public function run(): void
@@ -35,7 +37,13 @@ class Parser implements ParserInterface
 
     public function loadDocument(string $url): void
     {
-        $response = $this->client->get($url);
+        $maxProxyIndex = count($this->proxies) - 1;
+        $proxyIndex = rand(0, $maxProxyIndex);
+        $options = ["request.options" => [
+            'proxy' => $this->proxies[$proxyIndex],
+        ]];
+
+        $response = $this->client->get($url, $options);
         $html = $response->getBody();
         $this->document->loadHtml($html);
     }
