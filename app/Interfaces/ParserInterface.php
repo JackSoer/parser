@@ -10,4 +10,5 @@ interface ParserInterface
     function log(string $loggerName, mixed $stream, int $level, string $string, array $context): void;
     function run(): void;
     function initTasks(array $list): void;
+    function processTask(mixed $task): void;
 }

@@ -29,6 +29,10 @@ class Parser implements ParserInterface
     {
     }
 
+    public function processTask(mixed $task): void
+    {
+    }
+
     public function loadDocument(string $url): void
     {
         $response = $this->client->get($url);
@@ -63,4 +67,5 @@ class Parser implements ParserInterface
             $logToConsole->info($string, $context);
         }
     }
+
 }

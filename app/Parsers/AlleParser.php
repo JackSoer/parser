@@ -61,34 +61,39 @@ class AlleParser extends Parser
 
     private function saveQuestionsAndAnswers(mixed $tasks): void
     {
+        foreach ($tasks as $task) {
+            $this->processTask($task);
+        }
+    }
+
+    public function processTask(mixed $task): void
+    {
         $questionsAndAnswers = [
             'questions' => [],
             'answers' => [],
             'length' => [],
         ];
 
-        foreach ($tasks as $task) {
-            try {
-                $this->loadDocument($this->url . '/' . $task['url']);
+        try {
+            $this->loadDocument($this->url . '/' . $task['url']);
 
-                $questionsListNode = $this->document->find('.Question a');
-                $answersListNode = $this->document->find('.AnswerShort a');
+            $questionsListNode = $this->document->find('.Question a');
+            $answersListNode = $this->document->find('.AnswerShort a');
 
-                $questionsList = $this->getListInfo($questionsListNode);
-                $answersList = $this->getListInfo($answersListNode);
-                $answersLength = $this->getAnswersLength($answersList);
+            $questionsList = $this->getListInfo($questionsListNode);
+            $answersList = $this->getListInfo($answersListNode);
+            $answersLength = $this->getAnswersLength($answersList);
 
-                array_push($questionsAndAnswers['questions'], ...$questionsList);
-                array_push($questionsAndAnswers['answers'], ...$answersList);
-                array_push($questionsAndAnswers['length'], ...$answersLength);
+            array_push($questionsAndAnswers['questions'], ...$questionsList);
+            array_push($questionsAndAnswers['answers'], ...$answersList);
+            array_push($questionsAndAnswers['length'], ...$answersLength);
 
-                $this->saveQuestionsAndAnswersToDB($questionsAndAnswers, $task['url']);
+            $this->saveQuestionsAndAnswersToDB($questionsAndAnswers, $task['url']);
 
-                $task->updateStatus('completed');
-            } catch (Exception $err) {
-                $task->updateStatus('error');
-                $this->logError($err->getMessage());
-            }
+            $task->updateStatus('completed');
+        } catch (Exception $err) {
+            $task->updateStatus('error');
+            $this->logError($err->getMessage());
         }
     }
 
