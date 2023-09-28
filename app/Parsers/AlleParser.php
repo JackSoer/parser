@@ -62,35 +62,31 @@ class AlleParser extends Parser
 
     private function saveQuestionsAndAnswers(mixed $tasks): void
     {
+        $maxThreads = $_ENV['AMOUNT_OF_THREADS'];
+        $activeProcesses = 0;
+
         foreach ($tasks as $task) {
-            $this->processTask($task);
+            $pid = pcntl_fork();
+
+            if ($pid == -1) {
+                die('Could not fork');
+            } else if ($pid) {
+                $activeProcesses++;
+
+                if ($activeProcesses >= $maxThreads) {
+                    pcntl_wait($status);
+                    $activeProcesses--;
+                }
+            } else {
+                $this->processTask($task);
+                exit();
+            }
         }
 
-        // $maxThreads = $_ENV['AMOUNT_OF_THREADS'];
-        // $activeProcesses = 0;
-
-        // foreach ($tasks as $task) {
-        //     $pid = pcntl_fork();
-
-        //     if ($pid == -1) {
-        //         die('Could not fork');
-        //     } else if ($pid) {
-        //         $activeProcesses++;
-
-        //         if ($activeProcesses >= $maxThreads) {
-        //             pcntl_wait($status);
-        //             $activeProcesses--;
-        //         }
-        //     } else {
-        //         $this->processTask($task);
-        //         exit();
-        //     }
-        // }
-
-        // while ($activeProcesses > 0) {
-        //     pcntl_wait($status);
-        //     $activeProcesses--;
-        // }
+        while ($activeProcesses > 0) {
+            pcntl_wait($status);
+            $activeProcesses--;
+        }
     }
 
     public function processTask(mixed $task): void
