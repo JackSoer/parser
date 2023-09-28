@@ -23,7 +23,12 @@ $config = [
 ];
 
 $db = new DB($config);
+$options = [
+    "request.options" => [
+        'proxy' => 'http://45.8.104.227:80',
+    ],
+];
 
-$parser = new AlleParser($_ENV['PARSE_SITE_URL']);
+$parser = new AlleParser($_ENV['PARSE_SITE_URL'], $options);
 
 $parser->run();

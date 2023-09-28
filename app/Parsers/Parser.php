@@ -14,14 +14,18 @@ class Parser implements ParserInterface
     protected $document;
     public $url;
 
-    public function __construct(string $url)
+    public function __construct(string $url, array $clientOptions)
     {
-        $this->client = new Client();
+        $this->client = new Client($clientOptions);
         $this->url = $url;
         $this->document = new Document();
     }
 
     public function run(): void
+    {
+    }
+
+    public function initTasks(array $list): void
     {
     }
 
@@ -48,7 +52,7 @@ class Parser implements ParserInterface
         return $listInfo;
     }
 
-    public function log(string $loggerName, mixed $stream, int $level, string $string, array $context): void
+    public function log(string $loggerName, mixed $stream, int $level, string $string, array $context = []): void
     {
         $logToConsole = new Logger($loggerName);
         $logToConsole->pushHandler(new StreamHandler($stream, $level));

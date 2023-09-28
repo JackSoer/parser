@@ -4,20 +4,32 @@ namespace App\Parsers;
 
 use App\Models\Answer;
 use App\Models\Question;
+use App\Models\Task;
 use DiDom\Document;
 use Exception;
 
 class AlleParser extends Parser
 {
-    private function logQuestion(string $question, string $answer, int $answerLength, string $page, int $questionNumber): void
+    private function logQuestion(string $question, string $answer, int $answerLength, string $page): void
     {
-        $message = "Saved question $questionNumber at $page page";
+        $message = "Saved question $question at $page page";
         $context = ['Question' => $question, 'Answer' => $answer, 'Answer length' => $answerLength];
 
         if ($_ENV['LOGGER_MODE'] === 'debug') {
             $this->log('Parser', STDOUT, 100, $message, $context);
         } else if ($_ENV['LOGGER_MODE'] === 'file') {
             $this->log('Parser', STORAGE_PATH, 200, $message, $context);
+        }
+    }
+
+    private function logError(string $error): void
+    {
+        $message = "Error: $error";
+
+        if ($_ENV['LOGGER_MODE'] === 'debug') {
+            $this->log('Parser', STDOUT, 100, $message);
+        } else if ($_ENV['LOGGER_MODE'] === 'file') {
+            $this->log('Parser', STORAGE_PATH, 200, $message);
         }
     }
 
@@ -29,6 +41,8 @@ class AlleParser extends Parser
 
         for ($i = 0; $i < count($questions); $i++) {
             $question = Question::firstOrCreate(['text' => $questions[$i]['title']]);
+            $isNewQuestion = $question->wasRecentlyCreated;
+
             $answer = Answer::firstOrCreate(['text' => $answers[$i]['title']]);
 
             if (!$question->answers()->where('answer_id', $answer->id)->exists()) {
@@ -39,11 +53,13 @@ class AlleParser extends Parser
                 $answer->questions()->attach($question->id);
             }
 
-            $this->logQuestion($questions[$i]['title'], $answers[$i]['title'], $answersLengths[$i], $page, $i + 1);
+            if ($isNewQuestion) {
+                $this->logQuestion($questions[$i]['title'], $answers[$i]['title'], $answersLengths[$i], $page);
+            }
         }
     }
 
-    private function saveQuestionsAndAnswers(array $secondDnrgLists): void
+    private function saveQuestionsAndAnswers(mixed $tasks): void
     {
         $questionsAndAnswers = [
             'questions' => [],
@@ -51,21 +67,28 @@ class AlleParser extends Parser
             'length' => [],
         ];
 
-        foreach ($secondDnrgLists as $secondDnrgList) {
-            $this->loadDocument($this->url . '/' . $secondDnrgList['href']);
+        foreach ($tasks as $task) {
+            try {
+                $this->loadDocument($this->url . '/' . $task['url']);
 
-            $questionsListNode = $this->document->find('.Question a');
-            $answersListNode = $this->document->find('.AnswerShort a');
+                $questionsListNode = $this->document->find('.Question a');
+                $answersListNode = $this->document->find('.AnswerShort a');
 
-            $questionsList = $this->getListInfo($questionsListNode);
-            $answersList = $this->getListInfo($answersListNode);
-            $answersLength = $this->getAnswersLength($answersList);
+                $questionsList = $this->getListInfo($questionsListNode);
+                $answersList = $this->getListInfo($answersListNode);
+                $answersLength = $this->getAnswersLength($answersList);
 
-            array_push($questionsAndAnswers['questions'], ...$questionsList);
-            array_push($questionsAndAnswers['answers'], ...$answersList);
-            array_push($questionsAndAnswers['length'], ...$answersLength);
+                array_push($questionsAndAnswers['questions'], ...$questionsList);
+                array_push($questionsAndAnswers['answers'], ...$answersList);
+                array_push($questionsAndAnswers['length'], ...$answersLength);
 
-            $this->saveQuestionsAndAnswersToDB($questionsAndAnswers, $secondDnrgList['href']);
+                $this->saveQuestionsAndAnswersToDB($questionsAndAnswers, $task['url']);
+
+                $task->updateStatus('completed');
+            } catch (Exception $err) {
+                $task->updateStatus('error');
+                $this->logError($err->getMessage());
+            }
         }
     }
 
@@ -110,15 +133,40 @@ class AlleParser extends Parser
         echo 'Parsing was started...' . PHP_EOL;
 
         try {
-            $this->loadDocument($this->url . '/uebersicht.html');
+            if (Task::count() === 0) {
+                echo 'Creating tasks';
 
-            $dnrgList = $this->getDnrgList($this->document);
-            $secondDnrgLists = $this->getSecondDnrgLists($dnrgList);
-            $this->saveQuestionsAndAnswers($secondDnrgLists);
+                $this->loadDocument($this->url . '/uebersicht.html');
+
+                $dnrgList = $this->getDnrgList($this->document);
+                $secondDnrgLists = $this->getSecondDnrgLists($dnrgList);
+
+                $this->initTasks($secondDnrgLists);
+            }
+
+            if (!Task::where('status', 'pending')->exists()) {
+                Task::where('status', 'completed')->update(['status' => 'pending']);
+            }
+
+            $tasks = Task::where('status', 'pending')->get();
+
+            $this->saveQuestionsAndAnswers($tasks);
         } catch (Exception $err) {
             echo $err->getMessage();
         }
 
-        echo 'Parsing ended';
+        echo PHP_EOL . 'Parsing ended';
+    }
+
+    public function initTasks(array $list): void
+    {
+        foreach ($list as $item) {
+            Task::create([
+                'url' => $item['href'],
+                'status' => 'pending',
+            ]);
+
+            echo "Task " . $item['href'] . " was created" . PHP_EOL;
+        }
     }
 }
