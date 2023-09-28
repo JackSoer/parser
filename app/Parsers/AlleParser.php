@@ -146,6 +146,7 @@ class AlleParser extends Parser
 
             if (!Task::where('status', 'pending')->exists()) {
                 Task::where('status', 'completed')->update(['status' => 'pending']);
+                file_put_contents(STORAGE_PATH, '');
             }
 
             $tasks = Task::where('status', 'pending')->get();
