@@ -7,6 +7,7 @@ use App\Models\Question;
 use App\Models\Task;
 use DiDom\Document;
 use Exception;
+use Illuminate\Database\Capsule\Manager;
 
 class AlleParser extends Parser
 {
@@ -64,6 +65,32 @@ class AlleParser extends Parser
         foreach ($tasks as $task) {
             $this->processTask($task);
         }
+
+        // $maxThreads = $_ENV['AMOUNT_OF_THREADS'];
+        // $activeProcesses = 0;
+
+        // foreach ($tasks as $task) {
+        //     $pid = pcntl_fork();
+
+        //     if ($pid == -1) {
+        //         die('Could not fork');
+        //     } else if ($pid) {
+        //         $activeProcesses++;
+
+        //         if ($activeProcesses >= $maxThreads) {
+        //             pcntl_wait($status);
+        //             $activeProcesses--;
+        //         }
+        //     } else {
+        //         $this->processTask($task);
+        //         exit();
+        //     }
+        // }
+
+        // while ($activeProcesses > 0) {
+        //     pcntl_wait($status);
+        //     $activeProcesses--;
+        // }
     }
 
     public function processTask(mixed $task): void
@@ -157,6 +184,8 @@ class AlleParser extends Parser
             $tasks = Task::where('status', 'pending')->get();
 
             $this->saveQuestionsAndAnswers($tasks);
+
+            Manager::disconnect();
         } catch (Exception $err) {
             echo $err->getMessage();
         }
