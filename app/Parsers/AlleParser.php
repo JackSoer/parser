@@ -135,9 +135,6 @@ class AlleParser extends Parser
     {
         $dnrgItemsNodes = $document->find('.dnrg li a');
 
-        // Delete Sonstige Link
-        unset($dnrgItemsNodes[count($dnrgItemsNodes) - 1]);
-
         $dnrgList = $this->getListInfo($dnrgItemsNodes);
 
         return $dnrgList;
