@@ -5,6 +5,7 @@ namespace App\Parsers;
 use App\Models\Answer;
 use App\Models\Question;
 use App\Models\Task;
+use App\Process\ProcessManager;
 use DiDom\Document;
 use Exception;
 use Illuminate\Database\Capsule\Manager;
@@ -63,30 +64,10 @@ class AlleParser extends Parser
     private function saveQuestionsAndAnswers(mixed $tasks): void
     {
         $maxThreads = $_ENV['AMOUNT_OF_THREADS'];
-        $activeProcesses = 0;
 
-        foreach ($tasks as $task) {
-            $pid = pcntl_fork();
+        $processManager = new ProcessManager($maxThreads);
 
-            if ($pid == -1) {
-                die('Could not fork');
-            } else if ($pid) {
-                $activeProcesses++;
-
-                if ($activeProcesses >= $maxThreads) {
-                    pcntl_wait($status);
-                    $activeProcesses--;
-                }
-            } else {
-                $this->processTask($task);
-                exit();
-            }
-        }
-
-        while ($activeProcesses > 0) {
-            pcntl_wait($status);
-            $activeProcesses--;
-        }
+        $processManager->runProcesses($tasks, [$this->url, $this->proxies]);
     }
 
     public function processTask(mixed $task): void
@@ -183,7 +164,7 @@ class AlleParser extends Parser
             echo $err->getMessage();
         }
 
-        echo PHP_EOL . 'Parsing ended';
+        echo PHP_EOL . 'Parsing ended' . PHP_EOL;
     }
 
     public function initTasks(array $list): void
@@ -192,6 +173,8 @@ class AlleParser extends Parser
             Task::create([
                 'url' => $item['href'],
                 'status' => 'pending',
+                'class' => 'App\Parsers\AlleParser',
+                'method' => 'processTask'
             ]);
 
             echo "Task " . $item['href'] . " was created" . PHP_EOL;

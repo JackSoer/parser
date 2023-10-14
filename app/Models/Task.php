@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 class Task extends Model
 {
     protected $table = 'tasks';
-    protected $fillable = ['url', 'status'];
+    protected $fillable = ['url', 'status', 'class', 'method'];
 
     public function updateStatus($status)
     {
