@@ -140,7 +140,7 @@ class AlleParser extends Parser
 
         try {
             if (Task::count() === 0) {
-                echo 'Creating tasks';
+                echo 'Creating tasks' . PHP_EOL;
 
                 $this->loadDocument($this->url . '/uebersicht.html');
 
@@ -149,6 +149,8 @@ class AlleParser extends Parser
 
                 $this->initTasks($secondDnrgLists);
             }
+
+            Task::where('status', 'error')->update(['status' => 'pending']);
 
             if (!Task::where('status', 'pending')->exists()) {
                 Task::where('status', 'completed')->update(['status' => 'pending']);
